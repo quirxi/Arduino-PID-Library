@@ -35,6 +35,7 @@ double pidOutput;                       // specifies the percentage of how long 
 PID myPID(&pidInput, &pidOutput, &pidSetpoint, cProportional, cIntegral, cDerivative, DIRECT);
 
 unsigned long pidStart;                 // variable that marks the start of each PID_CYCLE
+unsigned long relayOnTime;              // keeps the time that relay should be switched on in ms
 
 //////////////////////////////////////////////////////////////////////////////////
 void setup()
@@ -51,8 +52,8 @@ void setup()
 
 //////////////////////////////////////////////////////////////////////////////////
 // turns relay on/off
-// ATTENTION: it is assumed that pulling your PID_RELAY_PIN to  
-//            high is switching the relay on (=normally open relays). 
+// ATTENTION: it is assumed that pulling your PID_RELAY_PIN to
+//            high is switching the relay on (=normally open relays).
 //////////////////////////////////////////////////////////////////////////////////
 void loop()
 {
@@ -65,12 +66,17 @@ void loop()
     if (pidOutput > 0)
     {
       digitalWrite(PID_RELAY_PIN, HIGH);
-      // calculate the time to keep the PID_RELAY_PIN high in ms based 
+      // calculate the time to keep the PID_RELAY_PIN high in ms based
       // from the pidOutput which is the percentage of time to pull the
       // PID_RELAY_PIN high within the PID_CYCLE window.
-      delay( (PID_CYCLE/100)*pidOutput ); 
-      digitalWrite(PID_RELAY_PIN, LOW);
+      relayOnTime = (PID_CYCLE / 100) * pidOutput;
+      if (relayOnTime < PID_CYCLE)       // only switch off relay when necessary, otherwise leave it on till next PID_CYCLE starts
+      {
+        delay(relayOnTime);
+        digitalWrite(PID_RELAY_PIN, LOW);
+      }
     }
+    else digitalWrite(PID_RELAY_PIN, LOW);  // set pin low when pidOutput = 0
   }
 }
 
