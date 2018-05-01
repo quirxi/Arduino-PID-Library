@@ -20,47 +20,33 @@
 // set the pins for input, output and sample frequency here:
 const unsigned short PID_INPUT_PIN = 0; // pin from which sensor input is read
 const unsigned short PID_RELAY_PIN = 6; // pin that is used to control relay
-const unsigned int PID_CYCLE = 5000;  // a fixed period of time that determines a full PID on/off cycle (ms)
+const unsigned int PID_CYCLE = 5000;    // a fixed period of time that determines a full PID on/off cycle (ms)
 
 // specify the PID constants here:
-double cProportional = 2;             // the proportional constant
-double cIntegral = 5;                 // the integral constant
-double cDerivative = 1;               // the derivative constant
+double cProportional = 2;               // the proportional constant
+double cIntegral = 5;                   // the integral constant
+double cDerivative = 1;                 // the derivative constant
 
-double pidSetpoint;                   // the desired target setpoint
-double pidInput;                      // the input to the PID controller as read from the sensor (=PID_INPUT_PIN)
-double pidOutput;                     // specifies the percentage of how long the relay is switched on within a fixed period of time (=PID_CYCLE)
+double pidSetpoint;                     // the desired target setpoint
+double pidInput;                        // the input to the PID controller as read from the sensor (=PID_INPUT_PIN)
+double pidOutput;                       // specifies the percentage of how long the relay is switched on within a fixed period of time (=PID_CYCLE)
 
 // initialize the PID controller
 PID myPID(&pidInput, &pidOutput, &pidSetpoint, cProportional, cIntegral, cDerivative, DIRECT);
 
-unsigned long pidStart;               // variable that marks the start of each PID_CYCLE
+unsigned long pidStart;                 // variable that marks the start of each PID_CYCLE
 
 //////////////////////////////////////////////////////////////////////////////////
 void setup()
 {
-  pinMode(PID_RELAY_PIN, OUTPUT);         // set the relay pin to output
-  pidSetpoint = 100;                      // set the desired target value
-  myPID.SetSampleTime(PID_CYCLE);         // tell the PID controller how frequently we will read a sample and calculate output
-  myPID.SetOutputLimits(0, PID_CYCLE);    // tell the PID to range between 0 and the full window size
-  myPID.SetMode(AUTOMATIC);               // turn the PID on
+  pinMode(PID_RELAY_PIN, OUTPUT);       // set the relay pin to output
+  digitalWrite(PID_RELAY_PIN, LOW);     // initialize elay pin to low
+  pidSetpoint = 100;                    // set the desired target value
+  myPID.SetSampleTime(PID_CYCLE);       // tell the PID controller how frequently we will read a sample and calculate output
+  myPID.SetOutputLimits(0, PID_CYCLE);  // tell the PID to range between 0 and the full window size
+  myPID.SetMode(AUTOMATIC);             // turn the PID on
   pidStart = millis();
   myPID.Compute();
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-void loop()
-{
-  // compute pidOutput each PID_CYCLE
-  if (millis() - pidStart > PID_CYCLE)
-  {
-    pidStart = millis();
-    pidInput = analogRead(PID_INPUT_PIN);
-    myPID.Compute();
-  }
-  // turn relay on or off depending on pidOutput. 
-  // probably it would be a good idea to add a short delay here ?
-  pidControl();
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -68,15 +54,23 @@ void loop()
 // ATTENTION: it is assumed that pulling your PID_RELAY_PIN to  
 //            high is switching the relay on (=normally open relays). 
 //////////////////////////////////////////////////////////////////////////////////
-void pidControl()
+void loop()
 {
-  if (pidOutput >= millis() - pidStart)
+  // compute pidOutput each PID_CYCLE
+  if (millis() - pidStart > PID_CYCLE)
   {
-    digitalWrite(PID_RELAY_PIN, HIGH);
-  }
-  else
-  {
-    digitalWrite(PID_RELAY_PIN, LOW);
+    pidStart = millis();                    // reset pidStart to begin of new PID_CYCLE
+    pidInput = analogRead(PID_INPUT_PIN);   // read sensor input
+    myPID.Compute();                        // compute pidOutput
+    if (pidOutput > 0)
+    {
+      digitalWrite(PID_RELAY_PIN, HIGH);
+      // calculate the time to keep the PID_RELAY_PIN high in ms based 
+      // from the pidOutput which is the percentage of time to pull the
+      // PID_RELAY_PIN high within the PID_CYCLE window.
+      delay( (PID_CYCLE/100)*pidOutput ); 
+      digitalWrite(PID_RELAY_PIN, LOW);
+    }
   }
 }
 
