@@ -41,7 +41,7 @@ unsigned int relayOnTime;              // keeps the time that relay should be sw
 void setup()
 {
   pinMode(PID_RELAY_PIN, OUTPUT);       // set the relay pin to output
-  digitalWrite(PID_RELAY_PIN, LOW);     // initialize elay pin to low
+  digitalWrite(PID_RELAY_PIN, LOW);     // initialize relay pin to low
   pidSetpoint = 100;                    // set the desired target value
   myPID.SetSampleTime(PID_CYCLE);       // tell the PID controller how frequently we will read a sample and calculate output
   myPID.SetOutputLimits(0, PID_CYCLE);  // tell the PID to range between 0 and the full window size
