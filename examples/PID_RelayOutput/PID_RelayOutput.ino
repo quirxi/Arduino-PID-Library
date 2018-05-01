@@ -5,7 +5,7 @@
    a relay.  the pid is designed to pidOutput an analog value,
    but the relay can only be On/Off.
 
-     to connect them together we use "time proportioning
+   To connect them together we use "time proportioning
    control"  it's essentially a really slow version of PWM.
    first we decide on a window size (5000mS say.) we then
    set the pid to adjust its output between 0 and that window
@@ -29,13 +29,12 @@ double cDerivative = 1;                 // the derivative constant
 
 double pidSetpoint;                     // the desired target setpoint
 double pidInput;                        // the input to the PID controller as read from the sensor (=PID_INPUT_PIN)
-double pidOutput;                       // specifies the percentage of how long the relay is switched on within a fixed period of time (=PID_CYCLE)
+double pidOutput;                       // specifies how long the relay is switched on within a fixed period of time (=PID_CYCLE)
 
 // initialize the PID controller
 PID myPID(&pidInput, &pidOutput, &pidSetpoint, cProportional, cIntegral, cDerivative, DIRECT);
 
 unsigned long pidStart;                 // variable that marks the start of each PID_CYCLE
-unsigned int relayOnTime;              // keeps the time that relay should be switched on in ms
 
 //////////////////////////////////////////////////////////////////////////////////
 void setup()
@@ -46,8 +45,8 @@ void setup()
   myPID.SetSampleTime(PID_CYCLE);       // tell the PID controller how frequently we will read a sample and calculate output
   myPID.SetOutputLimits(0, PID_CYCLE);  // tell the PID to range between 0 and the full window size
   myPID.SetMode(AUTOMATIC);             // turn the PID on
-  pidStart = millis();
-  myPID.Compute();
+  pidStart = millis();                  // here our first pid cycle (=PID_CYCLE) starts
+  myPID.Compute();                      // compute pidOutput for the first time
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -58,7 +57,7 @@ void setup()
 void loop()
 {
   // compute pidOutput each PID_CYCLE
-  if (millis() - pidStart > PID_CYCLE)
+  if (millis() - pidStart >= PID_CYCLE)
   {
     pidStart = millis();                    // reset pidStart to begin of new PID_CYCLE
     pidInput = analogRead(PID_INPUT_PIN);   // read sensor input
@@ -66,17 +65,13 @@ void loop()
     if (pidOutput > 0)
     {
       digitalWrite(PID_RELAY_PIN, HIGH);
-      // calculate the time to keep the PID_RELAY_PIN high in ms based
-      // from the pidOutput which is the percentage of time to pull the
-      // PID_RELAY_PIN high within the PID_CYCLE window.
-      relayOnTime = (PID_CYCLE / 100) * pidOutput;
-      if (relayOnTime < PID_CYCLE)       // only switch off relay when necessary, otherwise leave it on till next PID_CYCLE starts
+      if (pidOutput < PID_CYCLE)            // only switch off relay when necessary, otherwise leave it on till next PID_CYCLE starts
       {
-        delay(relayOnTime);
+        delay(pidOutput);
         digitalWrite(PID_RELAY_PIN, LOW);
       }
     }
-    else digitalWrite(PID_RELAY_PIN, LOW);  // set pin low when pidOutput = 0
+    else digitalWrite(PID_RELAY_PIN, LOW);  // set relay pin low when pidOutput = 0
   }
 }
 
