@@ -35,7 +35,7 @@ double pidOutput;                       // specifies the percentage of how long 
 PID myPID(&pidInput, &pidOutput, &pidSetpoint, cProportional, cIntegral, cDerivative, DIRECT);
 
 unsigned long pidStart;                 // variable that marks the start of each PID_CYCLE
-unsigned long relayOnTime;              // keeps the time that relay should be switched on in ms
+unsigned int relayOnTime;              // keeps the time that relay should be switched on in ms
 
 //////////////////////////////////////////////////////////////////////////////////
 void setup()
