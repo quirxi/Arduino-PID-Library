@@ -46,6 +46,7 @@ void setup()
   myPID.SetOutputLimits(0, PID_CYCLE);  // tell the PID to range between 0 and the full window size
   myPID.SetMode(AUTOMATIC);             // turn the PID on
   pidStart = millis();                  // here our first pid cycle (=PID_CYCLE) starts
+  pidInput = analogRead(PID_INPUT_PIN); // read sensor input
   myPID.Compute();                      // compute pidOutput for the first time
 }
 
