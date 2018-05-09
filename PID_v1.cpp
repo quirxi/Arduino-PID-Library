@@ -17,7 +17,7 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-PID::PID(double* Input, double* Output, double* Setpoint,
+PID::PID(volatile double* Input, volatile double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int POn, int ControllerDirection)
 {
     myOutput = Output;
@@ -32,8 +32,9 @@ PID::PID(double* Input, double* Output, double* Setpoint,
 
     PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd, POn);
-
+#ifndef __INTERRUPT__
     lastTime = millis()-SampleTime;
+#endif
 }
 
 /*Constructor (...)*********************************************************
@@ -41,7 +42,7 @@ PID::PID(double* Input, double* Output, double* Setpoint,
  *    to use Proportional on Error without explicitly saying so
  ***************************************************************************/
 
-PID::PID(double* Input, double* Output, double* Setpoint,
+PID::PID(volatile double* Input, volatile double* Output, double* Setpoint,
         double Kp, double Ki, double Kd, int ControllerDirection)
     :PID::PID(Input, Output, Setpoint, Kp, Ki, Kd, P_ON_E, ControllerDirection)
 {
@@ -55,13 +56,19 @@ PID::PID(double* Input, double* Output, double* Setpoint,
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
+#ifdef __INTERRUPT__
+void PID::Compute()
+#else
 bool PID::Compute()
+#endif
 {
    if(!inAuto) return false;
+#ifndef __INTERRUPT__
    unsigned long now = millis();
    unsigned long timeChange = (now - lastTime);
    if(timeChange>=SampleTime)
    {
+#endif
       /*Compute all the working error variables*/
       double input = *myInput;
       double error = *mySetpoint - input;
@@ -88,10 +95,12 @@ bool PID::Compute()
 
       /*Remember some variables for next time*/
       lastInput = input;
+#ifndef __INTERRUPT__
       lastTime = now;
 	    return true;
    }
    else return false;
+#endif
 }
 
 /* SetTunings(...)*************************************************************

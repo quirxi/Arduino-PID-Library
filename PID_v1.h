@@ -4,8 +4,6 @@
 
 class PID
 {
-
-
   public:
 
   //Constants used in some of the functions below
@@ -17,24 +15,24 @@ class PID
   #define P_ON_E 1
 
   //commonly used functions **************************************************************************
-    PID(double*, double*, double*,        // * constructor.  links the PID to the Input, Output, and 
+    PID(volatile double*, volatile double*, double*,        // * constructor.  links the PID to the Input, Output, and 
         double, double, double, int, int);//   Setpoint.  Initial tuning parameters are also set here.
                                           //   (overload for specifying proportional mode)
 
-    PID(double*, double*, double*,        // * constructor.  links the PID to the Input, Output, and 
+    PID(volatile double*, volatile double*, double*,        // * constructor.  links the PID to the Input, Output, and 
         double, double, double, int);     //   Setpoint.  Initial tuning parameters are also set here
 	
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
-    bool Compute();                       // * performs the PID calculation.  it should be
-                                          //   called every time loop() cycles. ON/OFF and
-                                          //   calculation frequency can be set using SetMode
-                                          //   SetSampleTime respectively
+#ifdef __INTERRUPT__
+    void Compute();                       // * performs the PID calculation.  it should be
+#else                                     //   called every time loop() cycles. ON/OFF and
+    bool Compute();                       //   calculation frequency can be set using SetMode
+#endif                                    //   SetSampleTime respectively
 
     void SetOutputLimits(double, double); // * clamps the output to a specific range. 0-255 by default, but
 										                      //   it's likely the user will want to change this depending on
 										                      //   the application
-	
 
 
   //available but not commonly used functions ********************************************************
@@ -74,15 +72,16 @@ class PID
 	int controllerDirection;
 	int pOn;
 
-    double *myInput;              // * Pointers to the Input, Output, and Setpoint variables
-    double *myOutput;             //   This creates a hard link between the variables and the 
+    volatile double *myInput;              // * Pointers to the Input, Output, and Setpoint variables
+    volatile double *myOutput;             //   This creates a hard link between the variables and the 
     double *mySetpoint;           //   PID, freeing the user from having to constantly tell us
                                   //   what these values are.  with pointers we'll just know.
-			  
-	unsigned long lastTime;
-	double outputSum, lastInput;
 
-	unsigned long SampleTime;
+    unsigned long SampleTime;
+	double outputSum, lastInput;
+#ifndef __INTERRUPT__
+	unsigned long lastTime;
+#endif
 	double outMin, outMax;
 	bool inAuto, pOnE;
 };
